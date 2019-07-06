@@ -1,0 +1,3 @@
+[submodule "pyclass_json"]
+	path = pyclass_json
+	url = git@github.com:an-dr/pyclass_json.git
