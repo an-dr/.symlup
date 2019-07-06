@@ -1,18 +1,19 @@
 import os
 import time
 import pathlib
+import click
 from pyclass_json import Json
 
+HOME = pathlib.Path("~").expanduser()
 SYMLINK_LIST_FILENAME = ".symlinks.json"
 SYMLINK_LIST_FILE_DEFAULT = """\
 {
-    "default": 
+    \"default\": 
     {
-        "C:/home":"C:/Users/dongr"
+        \"C:/home\": \"%s\"
     }
 }
-"""
-HOME = pathlib.Path("~").expanduser()
+""" % str(HOME).replace("\\", "/")
 
 syml_file = HOME.joinpath(SYMLINK_LIST_FILENAME)
 syml_json = Json()
@@ -23,6 +24,10 @@ class SymlUp:
         self.file = HOME.joinpath(SYMLINK_LIST_FILENAME)
         self.json = None  # type: Json()
         self.read = False
+        try:
+            self._read()
+        except FileNotFoundError:
+            self._init()
 
     def _read(self):
         try:
@@ -84,9 +89,11 @@ class SymlUp:
         os.symlink(src, dst)
         print("Set %s -> %s" % (src, dst))
 
-    def init(self):
+    def _init(self):
         self.json = Json(SYMLINK_LIST_FILE_DEFAULT)
+        self.read = True
         self._write()
+        print("%s was created in %s:\n %s" % (SYMLINK_LIST_FILENAME, HOME, SYMLINK_LIST_FILE_DEFAULT))
 
     def upd_link(self, symlink_group, src, dst):
         try:
@@ -98,7 +105,7 @@ class SymlUp:
             else:
                 self.json[symlink_group].update({dst: src})
             self._write()
-            self.apply_jsongroup(symlink_group)
+            self._apply_jsongroup(symlink_group)
         except Exception as e:
             print(e)
 
@@ -111,7 +118,7 @@ class SymlUp:
                 return
         print("There is no that symlink")
 
-    def apply_jsongroup(self, symlink_group):
+    def _apply_jsongroup(self, symlink_group):
         self._is_read()
         g = self.json[symlink_group]  # type: dict
         for dst, src in g.items():
@@ -120,24 +127,51 @@ class SymlUp:
             except Exception as e:
                 print(e)
 
-    def apply_json(self, symlink_group=None):
+    def apply(self, symlink_group=None):
         self._is_read()
         if symlink_group:
-            self.apply_jsongroup(symlink_group)
+            self._apply_jsongroup(symlink_group)
         else:
             for group in self.json.keys():
-                self.apply_jsongroup(group)
+                self._apply_jsongroup(group)
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@click.option("--symlink_group", "-g", type=str, default=None, required=False, help='Symlink group')
+def apply(symlink_group=None):
+    SymlUp().apply(symlink_group)
+
+
+@cli.command()
+@click.option("--dst", "-d", prompt='Destination path', type=str, default=None, required=True,
+              help='Destination path')
+def remove(dst):
+    SymlUp().remove_link(dst)
+
+
+@cli.command()
+@click.option("--symlink_group", "-g", prompt='Input group name', type=str, default=None, required=True,
+              help='Symlink group')
+@click.option("--src", "-s", prompt='Source path', type=str, default=None, required=True, help='Source path')
+@click.option("--dst", "-d", prompt='Destination path', type=str, default=None, required=True,
+              help='Destination path')
+def update(symlink_group, src, dst):
+    SymlUp().upd_link(symlink_group, src, dst)
 
 
 if __name__ == "__main__":
-    # set_symlinks()
-    obj = SymlUp()
+    cli()
+
     # obj.init()
-    obj._read()
-    obj.apply_json()
-    obj.upd_link("esp", "C:/esp/tools/msys2_esp_pack/20180110", "C:/msys33")
-    obj.remove_link("C:/msys33")
+    # obj.apply_json()
+    # obj.upd_link("esp", "C:/esp/tools/msys2_esp_pack/20180111", "C:/msys33")
+    # obj.remove_link("C:/msys33")
     # with open()
     # os.symlink("C:/", "C:/Users/dongr/c")
-    print("Done!")
-    time.sleep(5)
+    # print("Done!")
+    # time.sleep(5)
