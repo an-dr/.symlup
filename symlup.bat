@@ -31,4 +31,5 @@
 ::
 ::
 ::978f952a14a936cc963da21a135fa983
+cd /D "%~dp0"
 python.exe symlup.py %1 %2 %3 %4 %5 %6 %7 %8 %9
