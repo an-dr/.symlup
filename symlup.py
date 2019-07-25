@@ -5,6 +5,8 @@ import click
 from pyclass_json import Json
 
 HOME = pathlib.Path("~").expanduser()
+FIRST_CHAR_OK = "    (ok) "
+FIRST_CHAR_INFO = "    (!) "
 SYMLINK_LIST_FILENAME = ".symlinks.json"
 SYMLINK_LIST_FILE_DEFAULT = """\
 {
@@ -49,12 +51,12 @@ class SymlUp:
                 # check that group:
                 for link_dst, link_src in links.items():
                     if link_dst == dst:
-                        raise Exception("That destination (%s) is already using in other group: \n"
+                        raise Exception(FIRST_CHAR_INFO + "That destination (%s) is already using in other group: \n"
                                         "%s: %s -> %s" % (link_dst, group, link_src, link_dst))
 
     def _is_read(self):
         if not self.read:
-            raise IOError(".symlinks.json is not read")
+            raise IOError(FIRST_CHAR_INFO + ".symlinks.json is not read")
         else:
             return True
 
@@ -63,23 +65,26 @@ class SymlUp:
             self.json[group].pop(symlink)
             pathlib.Path(symlink).unlink()
         except KeyError:
-            print("Nothing to delete")
+            print(FIRST_CHAR_INFO + "Nothing to delete")
         except Exception as e:
             print(e)
 
     @staticmethod
     def _is_src_exist(src):
         if not pathlib.Path(src).exists():
-            raise NotADirectoryError("Source %s is not exists" % src)
+            raise NotADirectoryError(
+                FIRST_CHAR_INFO + "Source %s is not exists" % src)
 
     @staticmethod
     def _is_dst_file_or_dir(dst):
         if (not dst.is_symlink) and (dst.is_file() or dst.is_dir()):
-            print("Destination %s is a file or dir" % dst)
+            print(FIRST_CHAR_INFO + "Destination %s is a file or dir" % dst)
             return
 
     @staticmethod
-    def symlink(src_path, dst_path):
+    def symlink(src_path, dst_path, quiet=False):
+        src_path = str(src_path).replace("~", str(HOME)).strip()
+        dst_path = str(dst_path).replace("~", str(HOME)).strip()
         src = pathlib.Path(src_path)
         dst = pathlib.Path(dst_path)
         SymlUp._is_src_exist(src)
@@ -87,13 +92,15 @@ class SymlUp:
         if dst.is_symlink():
             dst.unlink()
         os.symlink(src, dst)
-        print("Set %s -> %s" % (src, dst))
+        if not quiet:
+            print(FIRST_CHAR_OK + "Set %s -> %s" % (src, dst))
 
     def _init(self):
         self.json = Json(SYMLINK_LIST_FILE_DEFAULT)
         self.read = True
         self._write()
-        print("%s was created in %s:\n %s" % (SYMLINK_LIST_FILENAME, HOME, SYMLINK_LIST_FILE_DEFAULT))
+        print(FIRST_CHAR_OK + "%s was created in %s:\n %s" %
+              (SYMLINK_LIST_FILENAME, HOME, SYMLINK_LIST_FILE_DEFAULT))
 
     def upd_link(self, symlink_group, src, dst):
         try:
@@ -105,7 +112,8 @@ class SymlUp:
             else:
                 self.json[symlink_group].update({dst: src})
             self._write()
-            self._apply_jsongroup(symlink_group)
+            self._apply_jsongroup(symlink_group, quiet=True)
+            print(FIRST_CHAR_OK + "Set %s -> %s" % (src, dst))
         except Exception as e:
             print(e)
 
@@ -114,16 +122,16 @@ class SymlUp:
             if dst in self.json[group].keys():
                 self._remove(group, dst)
                 self._write()
-                print("Removed: %s" % dst)
+                print(FIRST_CHAR_OK + "Removed: %s" % dst)
                 return
-        print("There is no that symlink")
+        print(FIRST_CHAR_INFO + "There is no that symlink")
 
-    def _apply_jsongroup(self, symlink_group):
+    def _apply_jsongroup(self, symlink_group, quiet=False):
         self._is_read()
         g = self.json[symlink_group]  # type: dict
         for dst, src in g.items():
             try:
-                self.symlink(src, dst)
+                self.symlink(src, dst, quiet)
             except Exception as e:
                 print(e)
 
@@ -148,6 +156,14 @@ def apply(symlink_group=None):
 
 
 @cli.command()
+def json():
+    """
+    open json file
+    """
+    os.system("start " + str(syml_file))
+
+
+@cli.command()
 @click.option("--dst", "-d", prompt='Destination path', type=str, default=None, required=True,
               help='Destination path')
 def remove(dst):
@@ -169,7 +185,7 @@ if __name__ == "__main__":
 
     # obj.init()
     # obj.apply_json()
-    # obj.upd_link("esp", "C:/esp/tools/msys2_esp_pack/20180111", "C:/msys33")
+    # SymlUp().upd_link("esp", "C:\\esp\\tools\\openocd-esp32", "~\\esp\\openocd-esp32")
     # obj.remove_link("C:/msys33")
     # with open()
     # os.symlink("C:/", "C:/Users/dongr/c")

@@ -26,10 +26,12 @@
 ::ZQ0/vhVqMQ3MEVWAtB9wSA==
 ::Zg8zqx1/OA3MEVWAtB9wSA==
 ::dhA7pRFwIByZRRnk
-::Zh4grVQjdCyDJGyX8VAjFB9bQgOQACWpH7gQ/fjH/POKrlgNGucnfe8=
+::Zh4grVQjdCyDJGyX8VAjFB9bQgOQACWpH7gQ/fjH7eOJnl4EWe4qaMHewrHu
 ::YB416Ek+ZG8=
 ::
 ::
 ::978f952a14a936cc963da21a135fa983
+@echo off
 cd /D "%~dp0"
-python.exe symlup.py %1 %2 %3 %4 %5 %6 %7 %8 %9
+@echo on
+python3.exe ../symlup.py %1 %2 %3 %4 %5 %6 %7 %8 %9
