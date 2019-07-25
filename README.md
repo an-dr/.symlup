@@ -27,6 +27,10 @@ Format:
 * Python 3
 * Click python library
 
+## Instalation
+
+Just clone this repo to any folder (e.g $HOME/.symlup)
+
 ## Usage
 
 ```bash
