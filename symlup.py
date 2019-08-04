@@ -52,7 +52,7 @@ class SymlUp:
                 for link_dst, link_src in links.items():
                     if link_dst == dst:
                         raise Exception(FIRST_CHAR_INFO + "That destination (%s) is already using in other group: \n"
-                                        "%s: %s -> %s" % (link_dst, group, link_src, link_dst))
+                                                          "%s: %s -> %s" % (link_dst, group, link_src, link_dst))
 
     def _is_read(self):
         if not self.read:
@@ -143,6 +143,14 @@ class SymlUp:
             for group in self.json.keys():
                 self._apply_jsongroup(group)
 
+    def print(self, group=None):
+        if group is None:
+            self.json.print()
+        else:
+            print("Group '%s':" % group)
+            g = Json(self.json.get(group))
+            g.print()
+
 
 @click.group()
 def cli():
@@ -151,8 +159,22 @@ def cli():
 
 @cli.command()
 @click.option("--symlink_group", "-g", type=str, default=None, required=False, help='Symlink group')
+
+
 def apply(symlink_group=None):
+    """apply current .symlink.json content"""
     SymlUp().apply(symlink_group)
+
+
+@cli.command()
+@click.option("--symlink_group", "-g", type=str, default=None, required=False, help='Symlink group')
+
+
+def list(symlink_group=None):
+    """
+print current .symlink.json content
+"""
+    SymlUp().print(symlink_group)
 
 
 @cli.command()
@@ -167,6 +189,9 @@ def json():
 @click.option("--dst", "-d", prompt='Destination path', type=str, default=None, required=True,
               help='Destination path')
 def remove(dst):
+    """
+    remove entry
+    """
     SymlUp().remove_link(dst)
 
 
@@ -177,11 +202,14 @@ def remove(dst):
 @click.option("--dst", "-d", prompt='Destination path', type=str, default=None, required=True,
               help='Destination path')
 def update(symlink_group, src, dst):
+    """add or change symlink"""
     SymlUp().upd_link(symlink_group, src, dst)
 
 
 if __name__ == "__main__":
     cli()
+
+    # SymlUp().print("python")
 
     # obj.init()
     # obj.apply_json()
